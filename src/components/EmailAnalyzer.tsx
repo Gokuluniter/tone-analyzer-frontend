@@ -1,144 +1,164 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Send, RotateCcw } from 'lucide-react';
+import { Mail, Loader, CheckCircle, XCircle } from 'lucide-react';
 import ToneIndicator from './ToneIndicator';
 import { ToneAnalysis } from '../types';
 
-const EmailAnalyzer: React.FC = () => {
-  const [emailText, setEmailText] = useState('');
-  const [subject, setSubject] = useState('');
+interface EmailAnalyzerProps {
+  onRewrite: (emailContent: string, tone: string) => void;
+}
+
+const EmailAnalyzer: React.FC<EmailAnalyzerProps> = ({ onRewrite }) => {
+  const [emailContent, setEmailContent] = useState('');
   const [analysis, setAnalysis] = useState<ToneAnalysis | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // The API URL now points to your Vercel Serverless Function proxy.
-  // This is a relative path, which is secure and works in production.
-  const apiUrl = '/api/analyze'; 
-
   const handleAnalyze = async () => {
-    if (!emailText.trim()) return;
+    if (emailContent.trim() === '') {
+        setAnalysis(null);
+        setError('Please enter some text to analyze.');
+        return;
+    }
 
-    setIsAnalyzing(true);
-    setAnalysis(null);
+    setLoading(true);
     setError(null);
+    setAnalysis(null);
 
     try {
-      // The fetch call points to your Vercel proxy, not the Hugging Face API directly.
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // The body now sends the text in a format that your proxy expects.
-        body: JSON.stringify({ text: emailText }),
-      });
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text: emailContent }),
+        });
 
-      if (!response.ok) {
-        throw new Error('Server responded with an error');
-      }
-      
-      // The proxy response is already structured for your component,
-      // and the actual analysis data is in the 'data' field.
-      const result: { data: [ToneAnalysis] } = await response.json();
-      setAnalysis(result.data[0]);
+        if (!response.ok) {
+            const errorData = await response.json();
+            setError(errorData.error || 'Failed to analyze tone.');
+            setLoading(false);
+            return;
+        }
+
+        const data = await response.json();
+
+        if (data && data.tone && data.confidence) {
+            setAnalysis(data);
+        } else {
+            setError('Unexpected data format from the server.');
+        }
 
     } catch (err) {
-      console.error(err);
-      setError("Failed to analyze tone. Please ensure the backend server is running.");
+        console.error('API call failed:', err);
+        setError('Failed to analyze tone. Please ensure the backend server is running.');
     } finally {
-      setIsAnalyzing(false);
+        setLoading(false);
     }
   };
 
-  const handleReset = () => {
-    setEmailText('');
-    setSubject('');
+  const handleClear = () => {
+    setEmailContent('');
     setAnalysis(null);
     setError(null);
   };
 
+  const handleRewriteClick = () => {
+    if (analysis) {
+        onRewrite(emailContent, analysis.tone);
+    }
+  };
+
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Email Tone Analyzer</h2>
-        <p className="text-gray-600">Analyze the psychological tone and sentiment of your emails</p>
+    <div className="flex flex-col md:flex-row gap-8 min-h-[600px]">
+      {/* Email Input Panel */}
+      <div className="w-full md:w-1/2 p-6 bg-white rounded-2xl shadow-lg flex flex-col">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Email Input</h2>
+        <div className="flex items-center text-gray-500 mb-2">
+          <Mail className="w-5 h-5 mr-2" />
+          <p className="text-sm">Email Content</p>
+        </div>
+        <textarea
+          className="flex-grow w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors duration-200 resize-none"
+          placeholder="Type or paste your email here..."
+          value={emailContent}
+          onChange={(e) => setEmailContent(e.target.value)}
+        />
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center text-red-500 text-sm mt-4"
+          >
+            <XCircle className="w-4 h-4 mr-2" />
+            {error}
+          </motion.div>
+        )}
+        <div className="flex items-center mt-4 space-x-4">
+          <motion.button
+            onClick={handleAnalyze}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={`w-full flex items-center justify-center py-3 px-6 rounded-xl text-lg font-semibold transition-all duration-300 ${
+              loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
+            }`}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <span className="mr-2">Analyze Tone</span>
+                <Mail className="w-5 h-5" />
+              </>
+            )}
+          </motion.button>
+          <motion.button
+            onClick={handleClear}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="p-3 bg-gray-200 text-gray-600 rounded-xl hover:bg-gray-300 transition-colors"
+          >
+            <XCircle className="w-6 h-6" />
+          </motion.button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex items-center mb-4">
-              <Mail className="w-5 h-5 text-blue-500 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-800">Email Input</h3>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Content
-                </label>
-                <textarea
-                  value={emailText}
-                  onChange={(e) => setEmailText(e.target.value)}
-                  placeholder="Paste your email content here for tone analysis..."
-                  rows={8}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                />
-              </div>
-              
-              <div className="flex space-x-3">
-                <motion.button
-                  onClick={handleAnalyze}
-                  disabled={!emailText.trim() || isAnalyzing}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Analyzing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4" />
-                      <span>Analyze Tone</span>
-                    </>
-                  )}
-                </motion.button>
-                
-                <motion.button
-                  onClick={handleReset}
-                  className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center justify-center"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </motion.button>
-              </div>
-              {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-            </div>
+      {/* Analysis Results Panel */}
+      <div className="w-full md:w-1/2 flex flex-col items-center justify-center p-6 bg-gray-50 rounded-2xl shadow-inner">
+        {loading ? (
+          <div className="flex flex-col items-center">
+            <Loader className="w-10 h-10 text-blue-500 animate-spin" />
+            <p className="mt-4 text-gray-600">Analyzing your email...</p>
           </div>
-        </div>
-
-        <div>
-          {analysis ? (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
+        ) : analysis ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full h-full flex flex-col justify-between"
+          >
+            <ToneIndicator analysis={analysis} />
+            <motion.button
+              onClick={handleRewriteClick}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="mt-6 w-full flex items-center justify-center py-3 px-6 rounded-xl text-lg font-semibold text-white bg-blue-500 hover:bg-blue-600 transition-colors"
             >
-              <ToneIndicator analysis={analysis} />
-            </motion.div>
-          ) : (
-            <div className="bg-gray-100 rounded-2xl shadow-lg p-6 h-full flex items-center justify-center">
-              <div className="text-center text-gray-500">
-                <Mail className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p className="text-lg">Enter an email to see tone analysis results</p>
-              </div>
-            </div>
-          )}
-        </div>
+              <Mail className="w-5 h-5 mr-2" />
+              Rewrite in a {analysis.tone} Tone
+            </motion.button>
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center text-gray-500"
+          >
+            <Mail className="w-24 h-24 mx-auto mb-4" />
+            <p className="text-lg">Enter an email to see tone analysis results</p>
+          </motion.div>
+        )}
       </div>
     </div>
   );
