@@ -2,7 +2,6 @@
 export default async function handler(request, response) {
   let text;
   
-  // Use a more reliable method to parse the request body
   if (request.body) {
     try {
       const body = typeof request.body === 'string' ? JSON.parse(request.body) : request.body;
@@ -16,8 +15,8 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: "Missing 'text' field in the request." });
   }
 
-  // Replace with the URL of your Hugging Face Space for tone analysis.
-  const HUGGING_FACE_API_URL = "https://goks24-tone-analyser-backend.hf.space/run/predict";
+  // The URL now points to the /analyze endpoint defined in your app.py
+  const HUGGING_FACE_API_URL = "https://goks24-tone-analyser-backend.hf.space/analyze";
 
   const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
 
@@ -32,7 +31,8 @@ export default async function handler(request, response) {
         'Authorization': `Bearer ${HUGGING_FACE_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ data: [text] })
+      // app.py expects a JSON object with a 'text' field
+      body: JSON.stringify({ text: text })
     });
 
     if (!hfResponse.ok) {
@@ -40,18 +40,13 @@ export default async function handler(request, response) {
       throw new Error(`Hugging Face API responded with an error: ${hfResponse.status} - ${errorText}`);
     }
 
+    // The response is a single JSON object, so no need to access the `data` field.
     const hfResult = await hfResponse.json();
-    const [tone, confidence, oceanTraits] = hfResult.data;
 
-    response.status(200).json({
-        tone: tone,
-        confidence: confidence,
-        oceanTraits: oceanTraits
-    });
+    response.status(200).json(hfResult);
 
   } catch (error) {
     console.error("Error calling Hugging Face API:", error);
     response.status(500).json({ error: "Failed to analyze tone." });
   }
 }
-
