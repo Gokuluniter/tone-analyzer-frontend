@@ -2,7 +2,6 @@
 export default async function handler(request, response) {
   let text, tone;
 
-  // Use a reliable method to parse the request body
   if (request.body) {
     try {
       const body = typeof request.body === 'string' ? JSON.parse(request.body) : request.body;
@@ -17,8 +16,8 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: "Missing 'text' or 'tone' field in the request." });
   }
 
-  // Replace with the URL of your Hugging Face Space for rewriting.
-  const HUGGING_FACE_API_URL = "https://goks24-tone-analyser-backend.hf.space/run/predict";
+  // The URL now points to the /rewrite endpoint defined in your app.py
+  const HUGGING_FACE_API_URL = "https://goks24-tone-analyser-backend.hf.space/rewrite";
 
   const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
 
@@ -33,8 +32,7 @@ export default async function handler(request, response) {
         'Authorization': `Bearer ${HUGGING_FACE_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      // Pass both inputs (text and tone) in the `data` array.
-      body: JSON.stringify({ data: [text, tone] })
+      body: JSON.stringify({ text: text, tone: tone })
     });
 
     if (!hfResponse.ok) {
@@ -42,11 +40,10 @@ export default async function handler(request, response) {
         throw new Error(`Hugging Face API responded with an error: ${hfResponse.status} - ${errorText}`);
     }
 
-    // The response contains the rewritten text as the first element of the `data` array.
+    // The response from app.py is a single JSON object
     const hfResult = await hfResponse.json();
-    const [rewrittenText] = hfResult.data;
+    const rewrittenText = hfResult.rewrittenText;
 
-    // We format the response to match what your frontend expects.
     response.status(200).json({ rewrittenText: rewrittenText });
 
   } catch (error) {
@@ -54,4 +51,3 @@ export default async function handler(request, response) {
     response.status(500).json({ error: "Failed to rewrite email." });
   }
 }
-
