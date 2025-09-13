@@ -1,12 +1,24 @@
 // api/analyze.js
 export default async function handler(request, response) {
-  const { text } = await request.json();
+  let text;
+  
+  // Use a more reliable method to parse the request body
+  if (request.body) {
+    try {
+      const body = typeof request.body === 'string' ? JSON.parse(request.body) : request.body;
+      text = body.text;
+    } catch (e) {
+      return response.status(400).json({ error: "Invalid JSON in request body." });
+    }
+  }
+
+  if (!text) {
+    return response.status(400).json({ error: "Missing 'text' field in the request." });
+  }
 
   // Replace with the URL of your Hugging Face Space for tone analysis.
-  // The `/run/predict` endpoint is a standard for Gradio demos.
-  const HUGGING_FACE_API_URL = "https://Tone_Analyser_backend.hf.space/run/predict";
+  const HUGGING_FACE_API_URL = "https://<your-tone-analysis-space>.hf.space/run/predict";
 
-  // This token is securely retrieved from Vercel's environment variables.
   const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
 
   if (!HUGGING_FACE_API_KEY) {
@@ -20,7 +32,6 @@ export default async function handler(request, response) {
         'Authorization': `Bearer ${HUGGING_FACE_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      // The `data` field contains an array of inputs, as expected by Gradio.
       body: JSON.stringify({ data: [text] })
     });
 
@@ -29,11 +40,9 @@ export default async function handler(request, response) {
       throw new Error(`Hugging Face API responded with an error: ${hfResponse.status} - ${errorText}`);
     }
 
-    // The response is an object with a `data` key, which is an array of results.
     const hfResult = await hfResponse.json();
     const [tone, confidence, oceanTraits] = hfResult.data;
 
-    // We format the response to match what your frontend expects.
     response.status(200).json({
         tone: tone,
         confidence: confidence,
