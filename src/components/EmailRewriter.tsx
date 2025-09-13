@@ -1,186 +1,172 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, Copy, Check, Wand2 } from 'lucide-react';
+import { Mail, PenTool, Loader, CheckCircle, XCircle } from 'lucide-react';
+import { ToneAnalysis } from '../types';
 
-const toneOptions = [
-    { value: 'positive', label: 'Positive', color: '#10B981' },
-    { value: 'negative', label: 'Negative', color: '#F87171' },
-    { value: 'agitated', label: 'Agitated', color: '#EF4444' },
-    { value: 'inquisitive', label: 'Inquisitive', color: '#3B82F6' },
-    { value: 'casual', label: 'Casual', color: '#F59E0B' },
-    { value: 'neutral', label: 'Neutral', color: '#6B7280' },
-];
+interface EmailRewriterProps {
+  initialContent: string;
+  initialTone: string;
+}
 
-const EmailRewriter: React.FC = () => {
-  const [originalEmail, setOriginalEmail] = useState('');
+const toneOptions = ['Positive', 'Agitated', 'Inquisitive', 'Casual', 'Formal'];
+
+const EmailRewriter: React.FC<EmailRewriterProps> = ({ initialContent, initialTone }) => {
+  const [emailContent, setEmailContent] = useState(initialContent);
+  const [selectedTone, setSelectedTone] = useState(initialTone);
   const [rewrittenEmail, setRewrittenEmail] = useState('');
-  const [isRewriting, setIsRewriting] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [targetTone, setTargetTone] = useState('neutral');
 
-  // The API URL now points to your Vercel Serverless Function proxy.
-  const apiUrl = '/api/rewrite';
-
-  const rewriteEmail = async () => {
-    if (!originalEmail.trim()) return;
-
-    setIsRewriting(true);
+  useEffect(() => {
+    setEmailContent(initialContent);
+    setSelectedTone(initialTone);
     setRewrittenEmail('');
     setError(null);
+  }, [initialContent, initialTone]);
+
+  const handleRewrite = async () => {
+    if (emailContent.trim() === '') {
+      setError('Please enter some text to rewrite.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setRewrittenEmail('');
 
     try {
-      // The fetch call now points to your Vercel proxy.
-      const response = await fetch(apiUrl, {
+      const response = await fetch('/api/rewrite', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // The body sends both the email text and the target tone.
-        // Your proxy will handle the formatting for the Hugging Face API.
-        body: JSON.stringify({ text: originalEmail, tone: targetTone }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: emailContent, tone: selectedTone }),
       });
 
       if (!response.ok) {
-        throw new Error('Server responded with an error');
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to rewrite email.');
+        setLoading(false);
+        return;
       }
 
-      // The proxy is expected to return a simple JSON object like { rewrittenText: '...' }
       const data = await response.json();
       setRewrittenEmail(data.rewrittenText);
-
     } catch (err) {
-      console.error(err);
-      setError("Failed to rewrite email. Please ensure the backend server is running.");
+      console.error('API call failed:', err);
+      setError('Failed to rewrite email. Please ensure the backend server is running.');
     } finally {
-      setIsRewriting(false);
+      setLoading(false);
     }
   };
 
-  const copyToClipboard = () => {
-    if (!rewrittenEmail) return;
-    const textArea = document.createElement("textarea");
-    textArea.value = rewrittenEmail;
-    document.body.appendChild(textArea);
-    textArea.select();
-    try {
-      document.execCommand('copy');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
-    document.body.removeChild(textArea);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(rewrittenEmail);
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Email Tone Rewriter</h2>
-        <p className="text-gray-600">Transform your emails to match any desired tone</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Original Email</h3>
-            <textarea
-              value={originalEmail}
-              onChange={(e) => setOriginalEmail(e.target.value)}
-              placeholder="Paste your original email here..."
-              rows={8}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            />
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Rewriting Options</h3>
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Target Tone</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {toneOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => setTargetTone(option.value)}
-                      className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                        targetTone === option.value
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-center">
-                        <div
-                          className="w-3 h-3 rounded-full mr-2"
-                          style={{ backgroundColor: option.color }}
-                        ></div>
-                        {option.label}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
+    <div className="flex flex-col md:flex-row gap-8 min-h-[600px]">
+      {/* Email Input Panel */}
+      <div className="w-full md:w-1/2 p-6 bg-white rounded-2xl shadow-lg flex flex-col">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Email Rewriter</h2>
+        <div className="flex items-center text-gray-500 mb-2">
+          <Mail className="w-5 h-5 mr-2" />
+          <p className="text-sm">Original Content</p>
+        </div>
+        <textarea
+          className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors duration-200 resize-none flex-grow"
+          placeholder="Type or paste your email here..."
+          value={emailContent}
+          onChange={(e) => setEmailContent(e.target.value)}
+        />
+        <div className="flex flex-col mt-4">
+          <label className="text-sm font-medium text-gray-700 mb-1">Select a Tone</label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {toneOptions.map((tone) => (
               <motion.button
-                onClick={rewriteEmail}
-                disabled={!originalEmail.trim() || isRewriting}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                key={tone}
+                onClick={() => setSelectedTone(tone)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
+                  selectedTone === tone
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-blue-100'
+                }`}
               >
-                {isRewriting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Rewriting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="w-4 h-4" />
-                    <span>Rewrite Email</span>
-                  </>
-                )}
+                {tone}
               </motion.button>
-              {error && <p className="mt-2 text-sm text-red-600 text-center">{error}</p>}
-            </div>
+            ))}
           </div>
         </div>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center text-red-500 text-sm mt-4"
+          >
+            <XCircle className="w-4 h-4 mr-2" />
+            {error}
+          </motion.div>
+        )}
+        <motion.button
+          onClick={handleRewrite}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className={`w-full flex items-center justify-center py-3 px-6 mt-4 rounded-xl text-lg font-semibold transition-all duration-300 ${
+            loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-green-500 to-teal-500 text-white'
+          }`}
+          disabled={loading}
+        >
+          {loading ? (
+            <Loader className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              <span className="mr-2">Rewrite</span>
+              <PenTool className="w-5 h-5" />
+            </>
+          )}
+        </motion.button>
+      </div>
 
-        <div>
-          {rewrittenEmail || isRewriting ? (
+      {/* Rewritten Email Panel */}
+      <div className="w-full md:w-1/2 flex flex-col p-6 bg-gray-50 rounded-2xl shadow-inner">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Rewritten Email</h2>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center flex-grow">
+            <Loader className="w-10 h-10 text-green-500 animate-spin" />
+            <p className="mt-4 text-gray-600">Rewriting your email...</p>
+          </div>
+        ) : rewrittenEmail ? (
+          <div className="flex flex-col flex-grow">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="bg-white rounded-2xl shadow-lg p-6 h-full flex flex-col"
+              className="flex-grow w-full p-4 bg-white border border-gray-300 rounded-lg text-gray-800 resize-none outline-none overflow-auto"
             >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Rewritten Email</h3>
-                {rewrittenEmail && !isRewriting && (
-                  <motion.button
-                    onClick={copyToClipboard}
-                    className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    <span>{copied ? 'Copied!' : 'Copy'}</span>
-                  </motion.button>
-                )}
-              </div>
-              
-              <div className="bg-gray-50 rounded-lg p-4 flex-grow">
-                <pre className="whitespace-pre-wrap text-sm text-gray-800 font-sans">
-                  {isRewriting ? "Generating..." : rewrittenEmail}
-                </pre>
-              </div>
+              {rewrittenEmail}
             </motion.div>
-          ) : (
-            <div className="bg-gray-100 rounded-2xl shadow-lg p-6 h-full flex items-center justify-center">
-              <div className="text-center text-gray-500">
-                <RefreshCw className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p className="text-lg">Your rewritten email will appear here</p>
-              </div>
-            </div>
-          )}
-        </div>
+            <motion.button
+              onClick={handleCopy}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="mt-4 w-full flex items-center justify-center py-3 px-6 rounded-xl text-lg font-semibold text-white bg-gray-700 hover:bg-gray-800 transition-colors"
+            >
+              <CheckCircle className="w-5 h-5 mr-2" />
+              Copy Rewritten Email
+            </motion.button>
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center flex-grow text-center text-gray-500"
+          >
+            <PenTool className="w-24 h-24 mx-auto mb-4" />
+            <p className="text-lg">Your rewritten email will appear here</p>
+          </motion.div>
+        )}
       </div>
     </div>
   );
