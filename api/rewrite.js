@@ -18,7 +18,7 @@ export default async function handler(request, response) {
   }
 
   // Replace with the URL of your Hugging Face Space for rewriting.
-  const HUGGING_FACE_API_URL = "https://<your-rewriter-space>.hf.space/run/predict";
+  const HUGGING_FACE_API_URL = "https://goks24-tone-analyser-backend.hf.space/run/predict";
 
   const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
 
@@ -54,3 +54,4 @@ export default async function handler(request, response) {
     response.status(500).json({ error: "Failed to rewrite email." });
   }
 }
+
