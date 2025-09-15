@@ -11,9 +11,10 @@ import {
   Legend,
   ArcElement,
   BarElement,
+  RadialLinearScale, // Import the new scale for the radar chart
 } from 'chart.js';
-import { Line, Doughnut, Bar } from 'react-chartjs-2';
-import { TrendingUp, Users, Mail, BarChart3 } from 'lucide-react';
+import { Line, Bar, Radar } from 'react-chartjs-2'; // Import Radar
+import { TrendingUp, Mail, BarChart3, Clock } from 'lucide-react';
 import { edaChartData } from '../utlis/mockData';
 
 ChartJS.register(
@@ -25,7 +26,8 @@ ChartJS.register(
   Tooltip,
   Legend,
   ArcElement,
-  BarElement
+  BarElement,
+  RadialLinearScale // Register the new scale
 );
 
 const EDADashboard: React.FC = () => {
@@ -43,26 +45,54 @@ const EDADashboard: React.FC = () => {
     },
   };
 
-  const doughnutOptions = {
+  // NEW: Data for the Psychological Profile Radar Chart
+  const psychologicalProfileData = {
+    labels: ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'],
+    datasets: [
+      {
+        label: 'Average Trait Score',
+        data: [65, 72, 58, 81, 34], // Example average scores out of 100
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        borderColor: 'rgba(59, 130, 246, 1)',
+        borderWidth: 2,
+        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgba(59, 130, 246, 1)',
+      },
+    ],
+  };
+
+  const radarOptions = {
     responsive: true,
+    scales: {
+      r: {
+        angleLines: {
+          display: true,
+        },
+        suggestedMin: 0,
+        suggestedMax: 100,
+      },
+    },
     plugins: {
       legend: {
-        position: 'bottom' as const,
+        position: 'top' as const,
       },
     },
   };
 
+
   const correlationData = {
-    labels: ['Length vs Formality', 'Politeness vs Sentiment', 'Urgency vs Emotion', 'Time vs Tone', 'Subject vs Body'],
+    labels: ['Agreeableness vs. Positive Tone', 'Neuroticism vs. Agitated Tone', 'Openness vs. Inquisitive Tone', 'Conscientiousness vs. Word Count', 'Extraversion vs. Response Rate'],
     datasets: [{
       label: 'Correlation Coefficient',
-      data: [0.72, 0.84, -0.63, 0.45, 0.58],
+      data: [0.68, 0.75, 0.55, -0.42, 0.61],
       backgroundColor: [
         '#3B82F6',
-        '#10B981',
         '#EF4444',
-        '#F59E0B',
         '#8B5CF6',
+        '#F59E0B',
+        '#10B981',
       ],
     }]
   };
@@ -83,10 +113,10 @@ const EDADashboard: React.FC = () => {
       color: 'bg-green-500'
     },
     {
-      title: 'Users Active',
-      value: '1,247',
-      change: '+12.8%',
-      icon: Users,
+      title: 'Avg. Analysis Time',
+      value: '0.8s',
+      change: '-5.2%',
+      icon: Clock,
       color: 'bg-purple-500'
     },
     {
@@ -127,15 +157,16 @@ const EDADashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* UPDATED: Replaced Doughnut chart with the new Radar chart */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
           className="bg-white rounded-2xl shadow-lg p-6"
         >
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Tone Distribution</h3>
-          <div className="h-64">
-            <Doughnut data={edaChartData.toneDistribution} options={doughnutOptions} />
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">Average Psychological Profile (OCEAN)</h3>
+          <div className="h-64 flex justify-center items-center">
+            <Radar data={psychologicalProfileData} options={radarOptions} />
           </div>
         </motion.div>
 
@@ -164,7 +195,7 @@ const EDADashboard: React.FC = () => {
             <Bar data={correlationData} options={chartOptions} />
           </div>
           <p className="text-sm text-gray-600 mt-4">
-            Strong positive correlation between politeness and sentiment (0.84), while urgency negatively correlates with emotional stability (-0.63).
+            Analysis shows strong links between psychological traits and email tones, such as Neuroticism's high correlation with Agitated Tone (0.75).
           </p>
         </motion.div>
 
@@ -203,3 +234,4 @@ const EDADashboard: React.FC = () => {
 };
 
 export default EDADashboard;
+
