@@ -13,9 +13,8 @@ import {
   BarElement,
   RadialLinearScale, // Import the new scale for the radar chart
 } from 'chart.js';
-import { Line, Bar, Radar } from 'react-chartjs-2'; // Import Radar
+import { Bar, Radar } from 'react-chartjs-2'; // Import Radar, remove Line
 import { TrendingUp, Mail, BarChart3, Clock } from 'lucide-react';
-import { edaChartData } from '../utlis/mockData';
 
 ChartJS.register(
   CategoryScale,
@@ -79,6 +78,21 @@ const EDADashboard: React.FC = () => {
         position: 'top' as const,
       },
     },
+  };
+
+  // NEW: Data for Average Word Count by Tone
+  const wordCountByToneData = {
+    labels: ['Positive', 'Agitated', 'Inquisitive', 'Casual'],
+    datasets: [{
+      label: 'Average Word Count',
+      data: [112, 178, 95, 76], // Example average word counts
+      backgroundColor: [
+        '#10B981', // Green for Positive
+        '#EF4444', // Red for Agitated
+        '#3B82F6', // Blue for Inquisitive
+        '#F59E0B', // Orange for Casual
+      ],
+    }]
   };
 
 
@@ -170,15 +184,16 @@ const EDADashboard: React.FC = () => {
           </div>
         </motion.div>
 
+        {/* UPDATED: Replaced Line chart with a Bar chart for Word Count */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
           className="bg-white rounded-2xl shadow-lg p-6"
         >
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Sentiment Trends Over Time</h3>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">Average Word Count by Tone</h3>
           <div className="h-64">
-            <Line data={edaChartData.sentimentTrend} options={chartOptions} />
+            <Bar data={wordCountByToneData} options={chartOptions} />
           </div>
         </motion.div>
       </div>
