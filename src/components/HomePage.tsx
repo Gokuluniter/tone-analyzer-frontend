@@ -29,17 +29,10 @@ const HomePage: React.FC<HomePageProps> = ({ setActiveTab }) => {
       color: 'bg-green-500',
       action: () => setActiveTab('eda')
     },
-    {
-      icon: Brain,
-      title: 'Model Comparison',
-      description: 'Compare multiple ML models with detailed performance metrics and accuracy scores',
-      color: 'bg-orange-500',
-      action: () => setActiveTab('models')
-    },
   ];
 
   const stats = [
-    { icon: Brain, label: 'Models Trained', value: '5+', color: 'text-blue-500' },
+    { icon: Award, label: 'Models Trained', value: '5+', color: 'text-blue-500' },
     { icon: Mail, label: 'Emails Analyzed', value: '2.5M+', color: 'text-green-500' },
     { icon: Award, label: 'Model Accuracy', value: '94.2%', color: 'text-purple-500' },
     { icon: TrendingUp, label: 'Success Rate', value: '98.7%', color: 'text-orange-500' },
@@ -114,19 +107,14 @@ const HomePage: React.FC<HomePageProps> = ({ setActiveTab }) => {
         </motion.div>
 
         {/* Features Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16"
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
           {features.map((feature, index) => (
             <motion.div
               key={feature.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all cursor-pointer"
+              className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all cursor-pointer flex flex-col"
               onClick={feature.action}
               whileHover={{ scale: 1.02 }}
             >
@@ -135,14 +123,14 @@ const HomePage: React.FC<HomePageProps> = ({ setActiveTab }) => {
               </div>
               
               <h3 className="text-2xl font-bold text-gray-800 mb-4">{feature.title}</h3>
-              <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+              <p className="text-gray-600 leading-relaxed flex-grow">{feature.description}</p>
               
               <div className="mt-6 flex items-center text-blue-500 font-medium">
                 <span>Explore →</span>
               </div>
             </motion.div>
           ))}
-        </motion.div>
+        </div>
 
         {/* Technology Stack */}
         <motion.div
@@ -159,7 +147,7 @@ const HomePage: React.FC<HomePageProps> = ({ setActiveTab }) => {
                 <Brain className="w-8 h-8 text-blue-500" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 mb-2">ML Models</h3>
-              <p className="text-gray-600">BERT, RoBERTa, CNN-BiLSTM, and traditional ML approaches</p>
+              <p className="text-gray-600">Tone, Rewriter, and Psychological Analyzers</p>
             </div>
             
             <div className="text-center">
@@ -167,7 +155,7 @@ const HomePage: React.FC<HomePageProps> = ({ setActiveTab }) => {
                 <BarChart3 className="w-8 h-8 text-green-500" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 mb-2">Data Science</h3>
-              <p className="text-gray-600">Comprehensive EDA, feature engineering, and statistical analysis</p>
+              <p className="text-gray-600">EDA, Feature Engineering, and Model Validation</p>
             </div>
             
             <div className="text-center">
@@ -185,3 +173,4 @@ const HomePage: React.FC<HomePageProps> = ({ setActiveTab }) => {
 };
 
 export default HomePage;
+
