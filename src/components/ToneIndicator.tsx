@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { ToneAnalysis } from '../types';
 
-// CONFIGURATION FOR TONES
+// CONFIGURATION FOR TONES - No changes here
 const toneConfig: { [key: string]: { color: string; icon: React.ReactNode } } = {
   Positive: { color: 'text-green-500', icon: <TrendingUp className="w-5 h-5" /> },
   Agitated: { color: 'text-red-500', icon: <Zap className="w-5 h-5" /> },
@@ -15,7 +15,7 @@ const toneConfig: { [key: string]: { color: string; icon: React.ReactNode } } = 
   default: { color: 'text-gray-500', icon: <HelpCircle className="w-5 h-5" /> },
 };
 
-// CONFIGURATION FOR OCEAN TRAITS
+// CONFIGURATION FOR OCEAN TRAITS - No changes here
 const oceanConfig: { [key: string]: { color: string; icon: React.ReactNode; barColor: string; } } = {
   Openness: { color: 'text-purple-500', icon: <Brain className="w-5 h-5" />, barColor: 'bg-purple-500' },
   Conscientiousness: { color: 'text-blue-500', icon: <CheckSquare className="w-5 h-5" />, barColor: 'bg-blue-500' },
@@ -25,7 +25,7 @@ const oceanConfig: { [key: string]: { color: string; icon: React.ReactNode; barC
   default: { color: 'text-gray-500', icon: <HelpCircle className="w-5 h-5" />, barColor: 'bg-gray-500' },
 };
 
-// UPDATED: Definitions are now more relatable and email-focused
+// Relatable definitions for each OCEAN trait - No changes here
 const oceanDefinitions: { [key: string]: string } = {
   Openness: "How creative or conventional is the language? High scores suggest imaginative wording, while low scores indicate more straightforward phrasing.",
   Conscientiousness: "How organized and goal-oriented is the email? High scores point to a structured and reliable message. Low scores suggest a more spontaneous approach.",
@@ -34,7 +34,16 @@ const oceanDefinitions: { [key: string]: string } = {
   Neuroticism: "How much stress or sensitivity is conveyed? High scores can indicate worry or urgency. Low scores suggest a calm and emotionally stable tone.",
 };
 
-// UPDATED: ScoreBar now includes a tooltip for descriptions
+// NEW: Frontend mapping to translate labels received from the backend. This is the fix.
+const oceanIdToLabelMap: { [key: string]: string } = {
+  'LABEL_0': 'Openness',
+  'LABEL_1': 'Conscientiousness',
+  'LABEL_2': 'Extraversion',
+  'LABEL_3': 'Agreeableness',
+  'LABEL_4': 'Neuroticism'
+};
+
+// ScoreBar component with tooltip functionality - No changes here
 const ScoreBar: React.FC<{ 
   label: string; 
   score: number; 
@@ -85,13 +94,16 @@ const ScoreBar: React.FC<{
   );
 };
 
-// UPDATED: This component now focuses only on Psychological Traits
+// Main component
 const ToneIndicator: React.FC<{ analysis: ToneAnalysis }> = ({ analysis }) => {
   const { tone, confidence, oceanTraits } = analysis;
-
   const dominantConfig = toneConfig[tone] || toneConfig.default;
 
-  const oceanData = oceanTraits ? Object.entries(oceanTraits).map(([label, score]) => ({ label, score })) : [];
+  // UPDATED: Translate the labels from the backend before rendering
+  const oceanData = oceanTraits ? Object.entries(oceanTraits).map(([label, score]) => {
+    const translatedLabel = oceanIdToLabelMap[label] || label; // Use the map, or fallback to the original label
+    return { label: translatedLabel, score };
+  }) : [];
   oceanData.sort((a, b) => b.score - a.score);
 
   return (
@@ -112,6 +124,7 @@ const ToneIndicator: React.FC<{ analysis: ToneAnalysis }> = ({ analysis }) => {
         <div className="space-y-4">
           {oceanData.length > 0 ? (
             oceanData.map((trait, index) => {
+              // Now `trait.label` will be "Openness", etc.
               const config = oceanConfig[trait.label] || oceanConfig.default;
               return (
                 <ScoreBar 
@@ -120,7 +133,7 @@ const ToneIndicator: React.FC<{ analysis: ToneAnalysis }> = ({ analysis }) => {
                   score={trait.score} 
                   index={index} 
                   config={config}
-                  description={oceanDefinitions[trait.label]} // Pass the description here
+                  description={oceanDefinitions[trait.label]} // This will now find the correct definition
                 />
               );
             })
