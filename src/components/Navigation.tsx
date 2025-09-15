@@ -13,7 +13,6 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab }) => {
     { id: 'analyzer', label: 'Tone Analyzer', icon: Mail },
     { id: 'rewriter', label: 'Email Rewriter', icon: RefreshCw },
     { id: 'eda', label: 'EDA Dashboard', icon: BarChart3 },
-    { id: 'models', label: 'Model Comparison', icon: Brain },
   ];
 
   return (
